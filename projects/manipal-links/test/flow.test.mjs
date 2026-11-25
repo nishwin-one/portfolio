@@ -1,0 +1,36 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {once} from 'node:events';
+import {makeServer} from '../server.mjs';
+test('private discovery, consent to pair, and chat only for accepted participants',async t=>{
+ const s=makeServer({file:':memory:',invite:'a-private-demo-code'});s.listen(0,'127.0.0.1');await once(s,'listening');t.after(()=>s.close());
+ const host='http://127.0.0.1:'+s.address().port;
+ async function req(route,body,session,origin){const res=await fetch(host+'/api/'+route,{method:body?'POST':'GET',headers:{...(body?{'Content-Type':'application/json'}:{}),...(session?{cookie:session}:{}),...(origin?{origin}:{})},body:body?JSON.stringify(body):undefined});
+ return {status:res.status,json:await res.json(),cookie:res.headers.get('set-cookie')?.split(';')[0]};
+ }
+ const fields=n=>({name:n,detail:'Engineering',username:n.toLowerCase(),password:'a-long-password-123',invite:'a-private-demo-code'});
+ assert.equal((await req('register',{...fields('Wrong'),invite:'no'})).status,403);
+ const users=await Promise.all(['Asha','Nila','Kavi'].map(n=>req('register',fields(n))));users.forEach(x=>assert.equal(x.status,200));
+ const [a,b,c]=users.map(x=>x.cookie);
+ assert.equal((await req('posts',{title:'Try'},a,'https://not-your-site.example')).status,403);
+ const post=(await req('posts',{category:'Hackathon',title:'Need a teammate',body:'I can handle the backend.'},a)).json.id;
+ assert.equal((await req('state')).json.posts.length,0);
+ assert.equal((await req('state',null,b)).json.posts[0].title,'Need a teammate');
+ assert.equal((await req('requests',{post,intro:'Self request'},a)).status,400);
+ const request=(await req('requests',{post,intro:'I can handle the UI.'},b)).json.id;
+ assert.equal((await req('requests',{post},b)).status,409);
+ assert.equal((await req('messages/'+request,null,b)).status,403);
+ assert.equal((await req('messages/'+request,{text:'Premature'},b)).status,403);
+ assert.equal((await req('requests/'+request+'/accept',{},b)).status,404);
+ assert.equal((await req('requests/'+request+'/accept',{},a)).status,200);
+ assert.equal((await req('messages/'+request,{text:'Hi, let’s pair up.'},b)).status,201);
+ assert.equal((await req('messages/'+request,null,a)).json.messages[0].text,'Hi, let’s pair up.');
+ assert.equal((await req('messages/'+request,null,c)).status,404);
+ assert.equal((await req('messages/'+request,{text:'Unrelated user'},c)).status,404);
+ const other=(await req('requests',{post},c)).json.id;
+ assert.equal((await req('requests/'+other+'/decline',{},a)).status,200);
+ assert.equal((await req('messages/'+other,null,c)).status,403);
+ assert.equal((await req('logout',{},b)).status,200);
+ assert.equal((await req('messages/'+request,null,b)).status,401);
+ assert.equal((await req('login',{username:'nila',password:'a-long-password-123'})).status,200);
+});

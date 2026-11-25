@@ -1,0 +1,8 @@
+"order_id","code","payment_ids","observed_statuses","row_count","expected_currency","actual_currency","expected_minor","actual_minor"
+"ord_102","missing_settlement","","pending","","","","",""
+"ord_103","amount_mismatch","pay_d","","","USD","USD","550","549"
+"ord_104","multiple_settlements","pay_e|pay_f","","","","","",""
+"ord_105","currency_mismatch","pay_g","","","USD","EUR","",""
+"ord_106","duplicate_payment_id","pay_h","","","","","",""
+"ord_107","duplicate_payment_id","pay_h","","","","","",""
+"ord_999","unknown_order","pay_i","","","","","",""

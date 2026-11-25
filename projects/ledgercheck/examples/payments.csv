@@ -1,0 +1,11 @@
+payment_id,order_id,amount,currency,status
+pay_a,ord_101,49.99,INR,settled
+pay_b,ord_101,49.99,INR,failed
+pay_c,ord_102,25.00,INR,pending
+pay_d,ord_103,5.49,USD,settled
+pay_e,ord_104,12.25,INR,settled
+pay_f,ord_104,12.25,INR,settled
+pay_g,ord_105,10.00,EUR,settled
+pay_h,ord_106,11.00,USD,settled
+pay_h,ord_107,9.00,USD,settled
+pay_i,ord_999,8.00,USD,settled
